@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Success — Weekly Timetable</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0c0f;
+    --surface: #13131a;
+    --card: #1a1a24;
+    --border: #2a2a3d;
+    --accent: #c8f06e;
+    --accent2: #6e8cf0;
+    --accent3: #f06e8c;
+    --accent4: #f0c86e;
+    --accent5: #6ef0c8;
+    --text: #e8e8f0;
+    --muted: #6b6b85;
+    --meal: #f0c86e;
+    --occupied: #3a1a1a;
+    --occupied-border: #6b2a2a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* NOISE TEXTURE */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  /* HEADER */
+  header {
+    padding: 48px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .header-left h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(56px, 8vw, 100px);
+    line-height: 0.9;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+
+  .header-left h1 span {
+    color: var(--accent);
+    display: block;
+  }
+
+  .header-left p {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .header-right {
+    text-align: right;
+  }
+
+  .header-right .window {
+    font-family: 'Fraunces', serif;
+    font-size: 14px;
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  .header-right .rule {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 36px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .stat-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .stat-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .stat-sub {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* DAY TABS */
+  .day-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .day-tab {
+    padding: 10px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    white-space: nowrap;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .day-tab:hover { border-color: var(--accent); color: var(--text); }
+  .day-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0c0c0f;
+    font-weight: 500;
+  }
+
+  /* TIMETABLE GRID */
+  .timetable-wrapper {
+    display: none;
+  }
+  .timetable-wrapper.active {
+    display: block;
+    animation: fadeUp 0.3s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .day-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .day-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .day-date-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .day-summary {
+    margin-left: auto;
+    text-align: right;
+  }
+
+  .day-summary .free-time {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    color: var(--accent5);
+    font-size: 13px;
+  }
+
+  /* TIME BLOCKS */
+  .schedule {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .time-block {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 12px;
+    align-items: stretch;
+    min-height: 52px;
+  }
+
+  .time-label {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-end;
+    padding-right: 12px;
+    border-right: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.3;
+    flex-shrink: 0;
+  }
+
+  .time-label .start { font-size: 13px; color: var(--text); font-weight: 500; }
+  .time-label .end { font-size: 10px; color: var(--muted); }
+
+  .block-content {
+    border-radius: 6px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-left: 3px solid transparent;
+    transition: transform 0.15s, box-shadow 0.15s;
+    cursor: default;
+    position: relative;
+  }
+
+  .block-content:hover {
+    transform: translateX(3px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+
+  .block-title {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  .block-meta {
+    font-size: 10px;
+    margin-top: 3px;
+    opacity: 0.7;
+    letter-spacing: 0.5px;
+  }
+
+  .block-tag {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    opacity: 0.5;
+  }
+
+  /* CATEGORY STYLES */
+  .cat-meal {
+    background: rgba(240,200,110,0.08);
+    border-left-color: var(--meal);
+    color: var(--meal);
+  }
+  .cat-meal .block-title { color: var(--meal); }
+
+  .cat-work {
+    background: rgba(200,240,110,0.08);
+    border-left-color: var(--accent);
+  }
+  .cat-work .block-title { color: var(--accent); }
+
+  .cat-learn {
+    background: rgba(110,140,240,0.08);
+    border-left-color: var(--accent2);
+  }
+  .cat-learn .block-title { color: var(--accent2); }
+
+  .cat-build {
+    background: rgba(110,240,200,0.08);
+    border-left-color: var(--accent5);
+  }
+  .cat-build .block-title { color: var(--accent5); }
+
+  .cat-social {
+    background: rgba(240,110,140,0.08);
+    border-left-color: var(--accent3);
+  }
+  .cat-social .block-title { color: var(--accent3); }
+
+  .cat-rest {
+    background: rgba(110,140,240,0.05);
+    border-left-color: var(--muted);
+  }
+  .cat-rest .block-title { color: var(--muted); }
+
+  .cat-occupied {
+    background: var(--occupied);
+    border-left-color: var(--occupied-border);
+    border: 1px dashed var(--occupied-border);
+    border-left: 3px solid var(--occupied-border);
+  }
+  .cat-occupied .block-title { color: #a05050; }
+
+  .cat-daily {
+    background: rgba(240,200,110,0.05);
+    border-left-color: var(--accent4);
+  }
+  .cat-daily .block-title { color: var(--accent4); }
+
+  .cat-free {
+    background: rgba(255,255,255,0.02);
+    border-left-color: transparent;
+    border: 1px dashed rgba(255,255,255,0.06);
+    border-left: 3px solid transparent;
+  }
+  .cat-free .block-title { color: var(--muted); }
+
+  /* WEEKLY OVERVIEW */
+  .weekly-view {
+    display: none;
+  }
+  .weekly-view.active {
+    display: block;
+    animation: fadeUp 0.3s ease;
+  }
+
+  .week-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    overflow-x: auto;
+  }
+
+  .week-col {
+    min-width: 120px;
+  }
+
+  .week-day-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    color: var(--muted);
+    text-align: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+
+  .week-block {
+    border-radius: 4px;
+    padding: 8px 10px;
+    margin-bottom: 4px;
+    font-size: 10px;
+    line-height: 1.4;
+    border-left: 2px solid transparent;
+  }
+
+  .week-block .wb-time { color: var(--muted); font-size: 9px; letter-spacing: 0.5px; }
+  .week-block .wb-name { margin-top: 2px; font-weight: 500; }
+
+  /* ACTIVITY SUMMARY CARDS */
+  .activities-section {
+    margin-top: 48px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+
+  .activities-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .activity-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .activity-card .ac-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .activity-card .ac-name {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .activity-card .ac-freq {
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .activity-card .ac-days {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .day-chip {
+    font-size: 9px;
+    padding: 3px 7px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.05);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .day-chip.active-day {
+    background: rgba(200,240,110,0.15);
+    color: var(--accent);
+  }
+
+  /* RULES SECTION */
+  .rules-section {
+    margin-top: 40px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+  }
+
+  .rules-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    color: var(--accent);
+    margin-bottom: 16px;
+    letter-spacing: 2px;
+  }
+
+  .rules-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px;
+  }
+
+  .rules-list li {
+    display: flex;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .rules-list li::before {
+    content: '→';
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* NAV tabs top */
+  .view-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+    align-items: center;
+  }
+
+  .view-btn {
+    padding: 8px 18px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .view-btn:hover { color: var(--text); border-color: var(--text); }
+  .view-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+  /* BREAK INDICATOR */
+  .break-indicator {
+    display: inline-block;
+    font-size: 9px;
+    padding: 2px 5px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.05);
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+
+  .progress-bar {
+    height: 3px;
+    border-radius: 2px;
+    background: var(--border);
+    margin-top: 8px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--accent);
+    transition: width 0.5s ease;
+  }
+
+  /* TOOLTIP */
+  .tooltip {
+    position: relative;
+  }
+  .tooltip:hover .tooltip-text {
+    display: block;
+  }
+  .tooltip-text {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e1e2e;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 10px;
+    white-space: nowrap;
+    z-index: 10;
+    color: var(--text);
+    pointer-events: none;
+  }
+
+  @media (max-width: 700px) {
+    .time-block { grid-template-columns: 72px 1fr; }
+    .week-grid { grid-template-columns: repeat(4, 1fr); }
+    header { flex-direction: column; align-items: flex-start; }
+    .header-right { text-align: left; }
+    .day-summary { margin-left: 0; margin-top: 6px; text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="header-left">
+      <h1>SUCCESS<span>TIMETABLE</span></h1>
+      <p>Structured · Expansive · Deadline-Locked</p>
+    </div>
+    <div class="header-right">
+      <div class="window">Active Window: 11:00 AM — 1:00 AM</div>
+      <div class="rule">14-hour daily operational period</div>
+      <div class="rule" style="margin-top:4px; color: var(--accent3);">⚑ Occupied slots are locked — do not schedule over them</div>
+    </div>
+  </header>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Daily Active Hours</div>
+      <div class="stat-value">14</div>
+      <div class="stat-sub">11 AM – 1 AM</div>
+    </div>
+    <div class="stat-card" style="--accent: #6e8cf0">
+      <div class="stat-label">Tracked Activities</div>
+      <div class="stat-value" style="color:var(--accent2)">11</div>
+      <div class="stat-sub">+ meals + free time</div>
+    </div>
+    <div class="stat-card" style="--accent: #f06e8c">
+      <div class="stat-label">Fixed Locks / Week</div>
+      <div class="stat-value" style="color:var(--accent3)">7</div>
+      <div class="stat-sub">occupied timeslots</div>
+    </div>
+    <div class="stat-card" style="--accent: #6ef0c8">
+      <div class="stat-label">Heaviest Day</div>
+      <div class="stat-value" style="color:var(--accent5)">WED</div>
+      <div class="stat-sub">Coding (10h) day</div>
+    </div>
+    <div class="stat-card" style="--accent: #f0c86e">
+      <div class="stat-label">Daily Dailies</div>
+      <div class="stat-value" style="color:var(--meal)">2</div>
+      <div class="stat-sub">Duolingo + Book Review</div>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#c8f06e"></div>Work / Core Tasks</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6e8cf0"></div>Learning / Certs</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6ef0c8"></div>Build / Coding</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f06e8c"></div>Social / People</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f0c86e"></div>Daily Habits</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7a7a94"></div>Rest / Nap</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(240,200,110,0.6)"></div>Meals</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6b2a2a; border: 1px dashed #a05050"></div>Occupied (Locked)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.1)"></div>Free / Flex</div>
+  </div>
+
+  <!-- VIEW TOGGLE -->
+  <div class="view-toggle">
+    <button class="view-btn active" onclick="switchView('daily')">Daily View</button>
+    <button class="view-btn" onclick="switchView('weekly')">Weekly Overview</button>
+    <button class="view-btn" onclick="switchView('activities')">Activity Cards</button>
+  </div>
+
+  <!-- DAY TABS (daily view) -->
+  <div id="daily-view">
+    <div class="day-tabs">
+      <div class="day-tab active" onclick="switchDay('mon')">Mon</div>
+      <div class="day-tab" onclick="switchDay('tue')">Tue</div>
+      <div class="day-tab" onclick="switchDay('wed')">Wed</div>
+      <div class="day-tab" onclick="switchDay('thu')">Thu</div>
+      <div class="day-tab" onclick="switchDay('fri')">Fri</div>
+      <div class="day-tab" onclick="switchDay('sat')">Sat</div>
+      <div class="day-tab" onclick="switchDay('sun')">Sun</div>
+    </div>
+
+    <!-- MONDAY -->
+    <div class="timetable-wrapper active" id="day-mon">
+      <div class="day-header">
+        <div>
+          <div class="day-name">Monday</div>
+          <div class="day-date-label">S_Techy Day · Certs · HAI Arch · Duolingo · Book Review</div>
+        </div>
+        <div class="day-summary">
+          <div class="free-time">~2.5h free flex time</div>
+          <div class="day-date-label">Lock: 10:00–11:00 PM</div>
+        </div>
+      </div>
+      <div class="schedule">
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:00</span><span class="end">11:30 AM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍳 Breakfast</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:30</span><span class="end">1:30 PM</span></div>
+          <div class="block-content cat-work"><div class="block-title">S_Techy</div><div class="block-meta">2h · no breaks · Mon–Fri core block</div><span class="block-tag">WORK</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">1:30</span><span class="end">2:30 PM</span></div>
+          <div class="block-content cat-daily"><div class="block-title">📖 Book Review</div><div class="block-meta">1h · no breaks · daily</div><span class="block-tag">DAILY</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">2:30</span><span class="end">3:00 PM</span></div>
+          <div class="block-content cat-free"><div class="block-title">Free / Buffer</div><div class="block-meta">30 min · transition + flex</div><span class="block-tag">FLEX</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">3:00</span><span class="end">3:30 PM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍽 Lunch</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">3:30</span><span class="end">6:30 PM</span></div>
+          <div class="block-content cat-learn"><div class="block-title">Certs</div><div class="block-meta">3h · no breaks · certification work</div><span class="block-tag">LEARN</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">6:30</span><span class="end">8:30 PM</span></div>
+          <div class="block-content cat-build"><div class="block-title">HAI Arch</div><div class="block-meta">2h (part 1 of 4h) · with breaks · continues after dinner</div><span class="block-tag">BUILD</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">8:30</span><span class="end">9:00 PM</span></div>
+          <div class="block-content cat-free"><div class="block-title">Free / Buffer</div><div class="block-meta">30 min · wind-down, prep dinner</div><span class="block-tag">FLEX</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">9:00</span><span class="end">9:30 PM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍜 Dinner</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">9:30</span><span class="end">10:00 PM</span></div>
+          <div class="block-content cat-daily"><div class="block-title">🌍 Duolingo</div><div class="block-meta">30 min · no breaks · daily habit</div><span class="block-tag">DAILY</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">10:00</span><span class="end">11:00 PM</span></div>
+          <div class="block-content cat-occupied"><div class="block-title">⛔ OCCUPIED</div><div class="block-meta">Locked timeslot — no scheduling</div><span class="block-tag">LOCKED</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:00 PM</span><span class="end">1:00 AM</span></div>
+          <div class="block-content cat-build"><div class="block-title">HAI Arch (cont.)</div><div class="block-meta">2h (part 2 of 4h) · completing today's session</div><span class="block-tag">BUILD</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TUESDAY -->
+    <div class="timetable-wrapper" id="day-tue">
+      <div class="day-header">
+        <div>
+          <div class="day-name">Tuesday</div>
+          <div class="day-date-label">S_Techy Day · Certs · Veto Academy · Nap · Duolingo · Book Review</div>
+        </div>
+        <div class="day-summary">
+          <div class="free-time">~1.5h free flex time</div>
+          <div class="day-date-label">Lock: 8:30–10:00 PM</div>
+        </div>
+      </div>
+      <div class="schedule">
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:00</span><span class="end">11:30 AM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍳 Breakfast</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:30</span><span class="end">1:30 PM</span></div>
+          <div class="block-content cat-work"><div class="block-title">S_Techy</div><div class="block-meta">2h · no breaks · Mon–Fri core block</div><span class="block-tag">WORK</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">1:30</span><span class="end">2:30 PM</span></div>
+          <div class="block-content cat-rest"><div class="block-title">💤 Light Nap</div><div class="block-meta">1h · no breaks · rest & recovery</div><span class="block-tag">REST</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">2:30</span><span class="end">3:00 PM</span></div>
+          <div class="block-content cat-daily"><div class="block-title">📖 Book Review</div><div class="block-meta">30 min · (split: other 30 after lunch)</div><span class="block-tag">DAILY</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">3:00</span><span class="end">3:30 PM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍽 Lunch</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">3:30</span><span class="end">4:00 PM</span></div>
+          <div class="block-content cat-daily"><div class="block-title">📖 Book Review (cont.)</div><div class="block-meta">30 min · completing 1h daily total</div><span class="block-tag">DAILY</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">4:00</span><span class="end">7:00 PM</span></div>
+          <div class="block-content cat-learn"><div class="block-title">Certs</div><div class="block-meta">3h · no breaks · certification work</div><span class="block-tag">LEARN</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">7:00</span><span class="end">8:30 PM</span></div>
+          <div class="block-content cat-build"><div class="block-title">Veto Academy</div><div class="block-meta">1.5h · no breaks</div><span class="block-tag">BUILD</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">8:30</span><span class="end">10:00 PM</span></div>
+          <div class="block-content cat-occupied"><div class="block-title">⛔ OCCUPIED</div><div class="block-meta">Locked timeslot — no scheduling</div><span class="block-tag">LOCKED</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">10:00</span><span class="end">10:30 PM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍜 Dinner</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">10:30</span><span class="end">11:00 PM</span></div>
+          <div class="block-content cat-daily"><div class="block-title">🌍 Duolingo</div><div class="block-meta">30 min · no breaks · daily habit</div><span class="block-tag">DAILY</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:00 PM</span><span class="end">1:00 AM</span></div>
+          <div class="block-content cat-free"><div class="block-title">Free / Flex / Wind Down</div><div class="block-meta">2h · personal time, low-demand tasks</div><span class="block-tag">FLEX</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEDNESDAY -->
+    <div class="timetable-wrapper" id="day-wed">
+      <div class="day-header">
+        <div>
+          <div class="day-name">Wednesday</div>
+          <div class="day-date-label">S_Techy Day · CODING DAY (10h) · Duolingo · Book Review</div>
+        </div>
+        <div class="day-summary">
+          <div class="free-time" style="color:var(--accent3)">Heaviest day — code-first structure</div>
+          <div class="day-date-label">No locks today</div>
+        </div>
+      </div>
+      <div class="schedule">
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:00</span><span class="end">11:30 AM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍳 Breakfast</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:30</span><span class="end">1:30 PM</span></div>
+          <div class="block-content cat-work"><div class="block-title">S_Techy</div><div class="block-meta">2h · no breaks · Mon–Fri core block</div><span class="block-tag">WORK</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">1:30</span><span class="end">2:00 PM</span></div>
+          <div class="block-content cat-daily"><div class="block-title">🌍 Duolingo</div><div class="block-meta">30 min · no breaks · daily habit</div><span class="block-tag">DAILY</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">2:00</span><span class="end">3:00 PM</span></div>
+          <div class="block-content cat-build"><div class="block-title">⌨️ Coding — Block 1</div><div class="block-meta">1h · with breaks allowed · part of 10h session</div><span class="block-tag">CODE</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">3:00</span><span class="end">3:30 PM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍽 Lunch</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">3:30</span><span class="end">7:30 PM</span></div>
+          <div class="block-content cat-build"><div class="block-title">⌨️ Coding — Block 2</div><div class="block-meta">4h · with breaks · core coding session</div><span class="block-tag">CODE</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">7:30</span><span class="end">8:00 PM</span></div>
+          <div class="block-content cat-daily"><div class="block-title">📖 Book Review</div><div class="block-meta">30 min · midpoint break reading</div><span class="block-tag">DAILY</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">8:00</span><span class="end">9:00 PM</span></div>
+          <div class="block-content cat-build"><div class="block-title">⌨️ Coding — Block 3</div><div class="block-meta">1h · continuing session</div><span class="block-tag">CODE</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">9:00</span><span class="end">9:30 PM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍜 Dinner</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">9:30</span><span class="end">11:00 PM</span></div>
+          <div class="block-content cat-build"><div class="block-title">⌨️ Coding — Block 4</div><div class="block-meta">1.5h · final coding block (9.5h total today)</div><span class="block-tag">CODE</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:00 PM</span><span class="end">11:30 PM</span></div>
+          <div class="block-content cat-build"><div class="block-title">⌨️ Coding — Wrap-Up</div><div class="block-meta">30 min · review, commit, document — completes 10h</div><span class="block-tag">CODE</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:30 PM</span><span class="end">1:00 AM</span></div>
+          <div class="block-content cat-daily"><div class="block-title">📖 Book Review (cont.) + Free</div><div class="block-meta">30 min reading · 1h free / wind-down</div><span class="block-tag">DAILY</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- THURSDAY -->
+    <div class="timetable-wrapper" id="day-thu">
+      <div class="day-header">
+        <div>
+          <div class="day-name">Thursday</div>
+          <div class="day-date-label">S_Techy Day · HAI Arch · Veto Academy · Nap · Duolingo · Book Review</div>
+        </div>
+        <div class="day-summary">
+          <div class="free-time">~0.5h free flex time</div>
+          <div class="day-date-label">Lock: 9:00–11:00 PM</div>
+        </div>
+      </div>
+      <div class="schedule">
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:00</span><span class="end">11:30 AM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍳 Breakfast</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:30</span><span class="end">1:30 PM</span></div>
+          <div class="block-content cat-work"><div class="block-title">S_Techy</div><div class="block-meta">2h · no breaks · Mon–Fri core block</div><span class="block-tag">WORK</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">1:30</span><span class="end">2:30 PM</span></div>
+          <div class="block-content cat-rest"><div class="block-title">💤 Light Nap</div><div class="block-meta">1h · no breaks</div><span class="block-tag">REST</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">2:30</span><span class="end">3:00 PM</span></div>
+          <div class="block-content cat-daily"><div class="block-title">📖 Book Review (pt 1)</div><div class="block-meta">30 min · first half of daily 1h</div><span class="block-tag">DAILY</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">3:00</span><span class="end">3:30 PM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍽 Lunch</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">3:30</span><span class="end">7:30 PM</span></div>
+          <div class="block-content cat-build"><div class="block-title">HAI Arch</div><div class="block-meta">4h · with breaks · full session</div><span class="block-tag">BUILD</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">7:30</span><span class="end">9:00 PM</span></div>
+          <div class="block-content cat-build"><div class="block-title">Veto Academy</div><div class="block-meta">1.5h · no breaks</div><span class="block-tag">BUILD</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">9:00</span><span class="end">11:00 PM</span></div>
+          <div class="block-content cat-occupied"><div class="block-title">⛔ OCCUPIED</div><div class="block-meta">Locked timeslot — no scheduling</div><span class="block-tag">LOCKED</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:00</span><span class="end">11:30 PM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍜 Dinner</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:30 PM</span><span class="end">12:00 AM</span></div>
+          <div class="block-content cat-daily"><div class="block-title">🌍 Duolingo</div><div class="block-meta">30 min · daily habit</div><span class="block-tag">DAILY</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">12:00</span><span class="end">12:30 AM</span></div>
+          <div class="block-content cat-daily"><div class="block-title">📖 Book Review (pt 2)</div><div class="block-meta">30 min · completing daily 1h total</div><span class="block-tag">DAILY</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">12:30</span><span class="end">1:00 AM</span></div>
+          <div class="block-content cat-free"><div class="block-title">Free / Wind Down</div><div class="block-meta">30 min · flex buffer</div><span class="block-tag">FLEX</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FRIDAY -->
+    <div class="timetable-wrapper" id="day-fri">
+      <div class="day-header">
+        <div>
+          <div class="day-name">Friday</div>
+          <div class="day-date-label">S_Techy Day · Certs · Social · People Check-Ups · Thrivers Trybe · Duolingo · Book Review</div>
+        </div>
+        <div class="day-summary">
+          <div class="free-time">Social-forward day</div>
+          <div class="day-date-label">Lock: 9:00–10:00 PM</div>
+        </div>
+      </div>
+      <div class="schedule">
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:00</span><span class="end">11:30 AM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍳 Breakfast</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:30</span><span class="end">1:30 PM</span></div>
+          <div class="block-content cat-work"><div class="block-title">S_Techy</div><div class="block-meta">2h · no breaks · Mon–Fri core block</div><span class="block-tag">WORK</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">1:30</span><span class="end">2:30 PM</span></div>
+          <div class="block-content cat-daily"><div class="block-title">📖 Book Review</div><div class="block-meta">1h · no breaks</div><span class="block-tag">DAILY</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">2:30</span><span class="end">3:00 PM</span></div>
+          <div class="block-content cat-free"><div class="block-title">Free / Buffer</div><div class="block-meta">30 min · flex</div><span class="block-tag">FLEX</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">3:00</span><span class="end">3:30 PM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍽 Lunch</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">3:30</span><span class="end">6:30 PM</span></div>
+          <div class="block-content cat-learn"><div class="block-title">Certs</div><div class="block-meta">3h · no breaks · certification work</div><span class="block-tag">LEARN</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">6:30</span><span class="end">7:30 PM</span></div>
+          <div class="block-content cat-social"><div class="block-title">Thrivers Trybe</div><div class="block-meta">1h · weekly session · no breaks</div><span class="block-tag">SOCIAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">7:30</span><span class="end">9:00 PM</span></div>
+          <div class="block-content cat-social"><div class="block-title">People Check-Ups</div><div class="block-meta">1.5h (part 1 of 3h) · with breaks</div><span class="block-tag">SOCIAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">9:00</span><span class="end">10:00 PM</span></div>
+          <div class="block-content cat-occupied"><div class="block-title">⛔ OCCUPIED</div><div class="block-meta">Locked timeslot — no scheduling</div><span class="block-tag">LOCKED</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">10:00</span><span class="end">10:30 PM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍜 Dinner</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">10:30</span><span class="end">11:00 PM</span></div>
+          <div class="block-content cat-daily"><div class="block-title">🌍 Duolingo</div><div class="block-meta">30 min · daily habit</div><span class="block-tag">DAILY</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:00 PM</span><span class="end">12:30 AM</span></div>
+          <div class="block-content cat-social"><div class="block-title">People Check-Ups (cont.)</div><div class="block-meta">1.5h · completing 3h weekly total</div><span class="block-tag">SOCIAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">12:30</span><span class="end">1:00 AM</span></div>
+          <div class="block-content cat-free"><div class="block-title">Free / Wind Down</div><div class="block-meta">30 min</div><span class="block-tag">FLEX</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SATURDAY -->
+    <div class="timetable-wrapper" id="day-sat">
+      <div class="day-header">
+        <div>
+          <div class="day-name">Saturday</div>
+          <div class="day-date-label">CODING DAY 2 (10h) · Certs · Social · HAI Arch · Duolingo · Book Review</div>
+        </div>
+        <div class="day-summary">
+          <div class="free-time" style="color:var(--accent3)">Second coding marathon</div>
+          <div class="day-date-label">Lock: 8:00–11:00 PM</div>
+        </div>
+      </div>
+      <div class="schedule">
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:00</span><span class="end">11:30 AM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍳 Breakfast</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:30</span><span class="end">1:00 PM</span></div>
+          <div class="block-content cat-daily"><div class="block-title">🌍 Duolingo + 📖 Book Review (pt 1)</div><div class="block-meta">30m Duolingo + 1h Book Review — daily habits blocked together</div><span class="block-tag">DAILY</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">1:00</span><span class="end">3:00 PM</span></div>
+          <div class="block-content cat-build"><div class="block-title">⌨️ Coding — Block 1</div><div class="block-meta">2h · with breaks · part of 10h weekly session 2</div><span class="block-tag">CODE</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">3:00</span><span class="end">3:30 PM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍽 Lunch</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">3:30</span><span class="end">6:30 PM</span></div>
+          <div class="block-content cat-build"><div class="block-title">⌨️ Coding — Block 2</div><div class="block-meta">3h · with breaks</div><span class="block-tag">CODE</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">6:30</span><span class="end">8:00 PM</span></div>
+          <div class="block-content cat-social"><div class="block-title">Social Time</div><div class="block-meta">1.5h (of 2h) · with breaks · friends, rest, connection</div><span class="block-tag">SOCIAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">8:00</span><span class="end">11:00 PM</span></div>
+          <div class="block-content cat-occupied"><div class="block-title">⛔ OCCUPIED</div><div class="block-meta">Locked timeslot — no scheduling</div><span class="block-tag">LOCKED</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:00</span><span class="end">11:30 PM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍜 Dinner</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:30 PM</span><span class="end">12:30 AM</span></div>
+          <div class="block-content cat-build"><div class="block-title">⌨️ Coding — Block 3</div><div class="block-meta">1h · completing ~6.5h of 10h — rest spills into Sun AM or adjust WED</div><span class="block-tag">CODE</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">12:30</span><span class="end">1:00 AM</span></div>
+          <div class="block-content cat-free"><div class="block-title">Free / Wind Down</div><div class="block-meta">30 min</div><span class="block-tag">FLEX</span></div>
+        </div>
+      </div>
+      <div style="margin-top:12px; padding:10px 14px; background:rgba(240,110,140,0.07); border:1px dashed rgba(240,110,140,0.2); border-radius:6px; font-size:11px; color:var(--muted);">
+        ⚠️ <strong style="color:var(--accent3)">Saturday Note:</strong> The 8–11PM lock is a 3-hour gap in the middle of what would be an ideal coding evening. Code 6.5h total Sat — close enough to target. Remaining 3.5h of 10h weekly target should be confirmed distributed with Wednesday's allocation. Adjust as needed without breaking locks.
+      </div>
+    </div>
+
+    <!-- SUNDAY -->
+    <div class="timetable-wrapper" id="day-sun">
+      <div class="day-header">
+        <div>
+          <div class="day-name">Sunday</div>
+          <div class="day-date-label">HAI Arch · Veto Academy · Nap · Social · Duolingo · Book Review</div>
+        </div>
+        <div class="day-summary">
+          <div class="free-time" style="color:var(--accent5)">Recovery + light productive day</div>
+          <div class="day-date-label">Lock: 9:00–10:00 PM</div>
+        </div>
+      </div>
+      <div class="schedule">
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:00</span><span class="end">11:30 AM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍳 Breakfast</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:30 AM</span><span class="end">1:00 PM</span></div>
+          <div class="block-content cat-social"><div class="block-title">Social Time</div><div class="block-meta">1.5h (remaining 30min flex) · weekly social window</div><span class="block-tag">SOCIAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">1:00</span><span class="end">2:00 PM</span></div>
+          <div class="block-content cat-rest"><div class="block-title">💤 Light Nap</div><div class="block-meta">1h · no breaks · recovery after week</div><span class="block-tag">REST</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">2:00</span><span class="end">3:00 PM</span></div>
+          <div class="block-content cat-daily"><div class="block-title">📖 Book Review</div><div class="block-meta">1h · no breaks</div><span class="block-tag">DAILY</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">3:00</span><span class="end">3:30 PM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍽 Lunch</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">3:30</span><span class="end">5:00 PM</span></div>
+          <div class="block-content cat-build"><div class="block-title">Veto Academy</div><div class="block-meta">1.5h · no breaks · 3rd of 3 weekly sessions</div><span class="block-tag">BUILD</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">5:00</span><span class="end">9:00 PM</span></div>
+          <div class="block-content cat-build"><div class="block-title">HAI Arch</div><div class="block-meta">4h · with breaks · 4th weekly session</div><span class="block-tag">BUILD</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">9:00</span><span class="end">10:00 PM</span></div>
+          <div class="block-content cat-occupied"><div class="block-title">⛔ OCCUPIED</div><div class="block-meta">Locked timeslot — no scheduling</div><span class="block-tag">LOCKED</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">10:00</span><span class="end">10:30 PM</span></div>
+          <div class="block-content cat-meal"><div class="block-title">🍜 Dinner</div><div class="block-meta">30 min · no breaks</div><span class="block-tag">MEAL</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">10:30</span><span class="end">11:00 PM</span></div>
+          <div class="block-content cat-daily"><div class="block-title">🌍 Duolingo</div><div class="block-meta">30 min · daily habit</div><span class="block-tag">DAILY</span></div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"><span class="start">11:00 PM</span><span class="end">1:00 AM</span></div>
+          <div class="block-content cat-free"><div class="block-title">Free / Week Prep / Wind Down</div><div class="block-meta">2h · plan next week, journaling, low-energy tasks</div><span class="block-tag">FLEX</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEEKLY OVERVIEW -->
+  <div id="weekly-view" class="weekly-view">
+    <div class="week-grid">
+      <!-- MON -->
+      <div class="week-col">
+        <div class="week-day-label">MON</div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">11:00–11:30</div><div class="wb-name" style="color:var(--meal)">Breakfast</div></div>
+        <div class="week-block cat-work" style="border-left-color:var(--accent)"><div class="wb-time">11:30–1:30p</div><div class="wb-name" style="color:var(--accent)">S_Techy</div></div>
+        <div class="week-block cat-daily" style="border-left-color:var(--accent4)"><div class="wb-time">1:30–2:30p</div><div class="wb-name" style="color:var(--accent4)">Book Review</div></div>
+        <div class="week-block cat-free"><div class="wb-time">2:30–3:00</div><div class="wb-name" style="color:var(--muted)">Free</div></div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">3:00–3:30</div><div class="wb-name" style="color:var(--meal)">Lunch</div></div>
+        <div class="week-block cat-learn" style="border-left-color:var(--accent2)"><div class="wb-time">3:30–6:30</div><div class="wb-name" style="color:var(--accent2)">Certs (3h)</div></div>
+        <div class="week-block cat-build" style="border-left-color:var(--accent5)"><div class="wb-time">6:30–8:30</div><div class="wb-name" style="color:var(--accent5)">HAI Arch pt.1</div></div>
+        <div class="week-block cat-free"><div class="wb-time">8:30–9:00</div><div class="wb-name" style="color:var(--muted)">Buffer</div></div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">9:00–9:30</div><div class="wb-name" style="color:var(--meal)">Dinner</div></div>
+        <div class="week-block cat-daily" style="border-left-color:var(--accent4)"><div class="wb-time">9:30–10:00</div><div class="wb-name" style="color:var(--accent4)">Duolingo</div></div>
+        <div class="week-block cat-occupied" style="border-left-color:var(--occupied-border)"><div class="wb-time">10:00–11p</div><div class="wb-name" style="color:#a05050">⛔ LOCK</div></div>
+        <div class="week-block cat-build" style="border-left-color:var(--accent5)"><div class="wb-time">11p–1:00a</div><div class="wb-name" style="color:var(--accent5)">HAI Arch pt.2</div></div>
+      </div>
+      <!-- TUE -->
+      <div class="week-col">
+        <div class="week-day-label">TUE</div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">11:00–11:30</div><div class="wb-name" style="color:var(--meal)">Breakfast</div></div>
+        <div class="week-block cat-work" style="border-left-color:var(--accent)"><div class="wb-time">11:30–1:30p</div><div class="wb-name" style="color:var(--accent)">S_Techy</div></div>
+        <div class="week-block cat-rest" style="border-left-color:var(--muted)"><div class="wb-time">1:30–2:30p</div><div class="wb-name" style="color:var(--muted)">Nap</div></div>
+        <div class="week-block cat-daily" style="border-left-color:var(--accent4)"><div class="wb-time">2:30–3:00</div><div class="wb-name" style="color:var(--accent4)">Book Rev. pt1</div></div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">3:00–3:30</div><div class="wb-name" style="color:var(--meal)">Lunch</div></div>
+        <div class="week-block cat-daily" style="border-left-color:var(--accent4)"><div class="wb-time">3:30–4:00</div><div class="wb-name" style="color:var(--accent4)">Book Rev. pt2</div></div>
+        <div class="week-block cat-learn" style="border-left-color:var(--accent2)"><div class="wb-time">4:00–7:00</div><div class="wb-name" style="color:var(--accent2)">Certs (3h)</div></div>
+        <div class="week-block cat-build" style="border-left-color:var(--accent5)"><div class="wb-time">7:00–8:30</div><div class="wb-name" style="color:var(--accent5)">Veto Academy</div></div>
+        <div class="week-block cat-occupied" style="border-left-color:var(--occupied-border)"><div class="wb-time">8:30–10p</div><div class="wb-name" style="color:#a05050">⛔ LOCK</div></div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">10–10:30</div><div class="wb-name" style="color:var(--meal)">Dinner</div></div>
+        <div class="week-block cat-daily" style="border-left-color:var(--accent4)"><div class="wb-time">10:30–11p</div><div class="wb-name" style="color:var(--accent4)">Duolingo</div></div>
+        <div class="week-block cat-free"><div class="wb-time">11p–1:00a</div><div class="wb-name" style="color:var(--muted)">Free (2h)</div></div>
+      </div>
+      <!-- WED -->
+      <div class="week-col">
+        <div class="week-day-label">WED</div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">11:00–11:30</div><div class="wb-name" style="color:var(--meal)">Breakfast</div></div>
+        <div class="week-block cat-work" style="border-left-color:var(--accent)"><div class="wb-time">11:30–1:30p</div><div class="wb-name" style="color:var(--accent)">S_Techy</div></div>
+        <div class="week-block cat-daily" style="border-left-color:var(--accent4)"><div class="wb-time">1:30–2:00</div><div class="wb-name" style="color:var(--accent4)">Duolingo</div></div>
+        <div class="week-block cat-build" style="border-left-color:#6ef0c8; background:rgba(110,240,200,0.12)"><div class="wb-time">2:00–3:00</div><div class="wb-name" style="color:var(--accent5)">⌨️ Coding B1</div></div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">3:00–3:30</div><div class="wb-name" style="color:var(--meal)">Lunch</div></div>
+        <div class="week-block cat-build" style="border-left-color:#6ef0c8; background:rgba(110,240,200,0.12)"><div class="wb-time">3:30–7:30</div><div class="wb-name" style="color:var(--accent5)">⌨️ Coding B2 (4h)</div></div>
+        <div class="week-block cat-daily" style="border-left-color:var(--accent4)"><div class="wb-time">7:30–8:00</div><div class="wb-name" style="color:var(--accent4)">Book Review</div></div>
+        <div class="week-block cat-build" style="border-left-color:#6ef0c8; background:rgba(110,240,200,0.12)"><div class="wb-time">8:00–9:00</div><div class="wb-name" style="color:var(--accent5)">⌨️ Coding B3</div></div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">9:00–9:30</div><div class="wb-name" style="color:var(--meal)">Dinner</div></div>
+        <div class="week-block cat-build" style="border-left-color:#6ef0c8; background:rgba(110,240,200,0.12)"><div class="wb-time">9:30–11:30p</div><div class="wb-name" style="color:var(--accent5)">⌨️ Coding B4+wrap</div></div>
+        <div class="week-block cat-free"><div class="wb-time">11:30–1a</div><div class="wb-name" style="color:var(--muted)">Book+Free</div></div>
+      </div>
+      <!-- THU -->
+      <div class="week-col">
+        <div class="week-day-label">THU</div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">11:00–11:30</div><div class="wb-name" style="color:var(--meal)">Breakfast</div></div>
+        <div class="week-block cat-work" style="border-left-color:var(--accent)"><div class="wb-time">11:30–1:30p</div><div class="wb-name" style="color:var(--accent)">S_Techy</div></div>
+        <div class="week-block cat-rest" style="border-left-color:var(--muted)"><div class="wb-time">1:30–2:30</div><div class="wb-name" style="color:var(--muted)">Nap</div></div>
+        <div class="week-block cat-daily" style="border-left-color:var(--accent4)"><div class="wb-time">2:30–3:00</div><div class="wb-name" style="color:var(--accent4)">Book Rev. pt1</div></div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">3:00–3:30</div><div class="wb-name" style="color:var(--meal)">Lunch</div></div>
+        <div class="week-block cat-build" style="border-left-color:var(--accent5)"><div class="wb-time">3:30–7:30</div><div class="wb-name" style="color:var(--accent5)">HAI Arch (4h)</div></div>
+        <div class="week-block cat-build" style="border-left-color:var(--accent5)"><div class="wb-time">7:30–9:00</div><div class="wb-name" style="color:var(--accent5)">Veto Academy</div></div>
+        <div class="week-block cat-occupied" style="border-left-color:var(--occupied-border)"><div class="wb-time">9:00–11p</div><div class="wb-name" style="color:#a05050">⛔ LOCK</div></div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">11–11:30</div><div class="wb-name" style="color:var(--meal)">Dinner</div></div>
+        <div class="week-block cat-daily" style="border-left-color:var(--accent4)"><div class="wb-time">11:30p–12a</div><div class="wb-name" style="color:var(--accent4)">Duolingo</div></div>
+        <div class="week-block cat-daily" style="border-left-color:var(--accent4)"><div class="wb-time">12:00–12:30</div><div class="wb-name" style="color:var(--accent4)">Book Rev. pt2</div></div>
+        <div class="week-block cat-free"><div class="wb-time">12:30–1a</div><div class="wb-name" style="color:var(--muted)">Free</div></div>
+      </div>
+      <!-- FRI -->
+      <div class="week-col">
+        <div class="week-day-label">FRI</div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">11:00–11:30</div><div class="wb-name" style="color:var(--meal)">Breakfast</div></div>
+        <div class="week-block cat-work" style="border-left-color:var(--accent)"><div class="wb-time">11:30–1:30p</div><div class="wb-name" style="color:var(--accent)">S_Techy</div></div>
+        <div class="week-block cat-daily" style="border-left-color:var(--accent4)"><div class="wb-time">1:30–2:30</div><div class="wb-name" style="color:var(--accent4)">Book Review</div></div>
+        <div class="week-block cat-free"><div class="wb-time">2:30–3:00</div><div class="wb-name" style="color:var(--muted)">Buffer</div></div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">3:00–3:30</div><div class="wb-name" style="color:var(--meal)">Lunch</div></div>
+        <div class="week-block cat-learn" style="border-left-color:var(--accent2)"><div class="wb-time">3:30–6:30</div><div class="wb-name" style="color:var(--accent2)">Certs (3h)</div></div>
+        <div class="week-block cat-social" style="border-left-color:var(--accent3)"><div class="wb-time">6:30–7:30</div><div class="wb-name" style="color:var(--accent3)">Thrivers Trybe</div></div>
+        <div class="week-block cat-social" style="border-left-color:var(--accent3)"><div class="wb-time">7:30–9:00</div><div class="wb-name" style="color:var(--accent3)">People CU pt1</div></div>
+        <div class="week-block cat-occupied" style="border-left-color:var(--occupied-border)"><div class="wb-time">9:00–10p</div><div class="wb-name" style="color:#a05050">⛔ LOCK</div></div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">10–10:30</div><div class="wb-name" style="color:var(--meal)">Dinner</div></div>
+        <div class="week-block cat-daily" style="border-left-color:var(--accent4)"><div class="wb-time">10:30–11p</div><div class="wb-name" style="color:var(--accent4)">Duolingo</div></div>
+        <div class="week-block cat-social" style="border-left-color:var(--accent3)"><div class="wb-time">11p–12:30a</div><div class="wb-name" style="color:var(--accent3)">People CU pt2</div></div>
+        <div class="week-block cat-free"><div class="wb-time">12:30–1a</div><div class="wb-name" style="color:var(--muted)">Free</div></div>
+      </div>
+      <!-- SAT -->
+      <div class="week-col">
+        <div class="week-day-label">SAT</div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">11:00–11:30</div><div class="wb-name" style="color:var(--meal)">Breakfast</div></div>
+        <div class="week-block cat-daily" style="border-left-color:var(--accent4)"><div class="wb-time">11:30–1:00</div><div class="wb-name" style="color:var(--accent4)">Duolingo+BookRev</div></div>
+        <div class="week-block cat-build" style="border-left-color:#6ef0c8; background:rgba(110,240,200,0.12)"><div class="wb-time">1:00–3:00</div><div class="wb-name" style="color:var(--accent5)">⌨️ Coding B1</div></div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">3:00–3:30</div><div class="wb-name" style="color:var(--meal)">Lunch</div></div>
+        <div class="week-block cat-build" style="border-left-color:#6ef0c8; background:rgba(110,240,200,0.12)"><div class="wb-time">3:30–6:30</div><div class="wb-name" style="color:var(--accent5)">⌨️ Coding B2 (3h)</div></div>
+        <div class="week-block cat-social" style="border-left-color:var(--accent3)"><div class="wb-time">6:30–8:00</div><div class="wb-name" style="color:var(--accent3)">Social Time</div></div>
+        <div class="week-block cat-occupied" style="border-left-color:var(--occupied-border)"><div class="wb-time">8:00–11p</div><div class="wb-name" style="color:#a05050">⛔ LOCK</div></div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">11–11:30</div><div class="wb-name" style="color:var(--meal)">Dinner</div></div>
+        <div class="week-block cat-build" style="border-left-color:#6ef0c8; background:rgba(110,240,200,0.12)"><div class="wb-time">11:30p–12:30a</div><div class="wb-name" style="color:var(--accent5)">⌨️ Coding B3</div></div>
+        <div class="week-block cat-free"><div class="wb-time">12:30–1a</div><div class="wb-name" style="color:var(--muted)">Free</div></div>
+      </div>
+      <!-- SUN -->
+      <div class="week-col">
+        <div class="week-day-label">SUN</div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">11:00–11:30</div><div class="wb-name" style="color:var(--meal)">Breakfast</div></div>
+        <div class="week-block cat-social" style="border-left-color:var(--accent3)"><div class="wb-time">11:30–1:00</div><div class="wb-name" style="color:var(--accent3)">Social Time</div></div>
+        <div class="week-block cat-rest" style="border-left-color:var(--muted)"><div class="wb-time">1:00–2:00</div><div class="wb-name" style="color:var(--muted)">Nap</div></div>
+        <div class="week-block cat-daily" style="border-left-color:var(--accent4)"><div class="wb-time">2:00–3:00</div><div class="wb-name" style="color:var(--accent4)">Book Review</div></div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">3:00–3:30</div><div class="wb-name" style="color:var(--meal)">Lunch</div></div>
+        <div class="week-block cat-build" style="border-left-color:var(--accent5)"><div class="wb-time">3:30–5:00</div><div class="wb-name" style="color:var(--accent5)">Veto Academy</div></div>
+        <div class="week-block cat-build" style="border-left-color:var(--accent5)"><div class="wb-time">5:00–9:00</div><div class="wb-name" style="color:var(--accent5)">HAI Arch (4h)</div></div>
+        <div class="week-block cat-occupied" style="border-left-color:var(--occupied-border)"><div class="wb-time">9:00–10p</div><div class="wb-name" style="color:#a05050">⛔ LOCK</div></div>
+        <div class="week-block cat-meal" style="border-left-color:var(--meal)"><div class="wb-time">10–10:30</div><div class="wb-name" style="color:var(--meal)">Dinner</div></div>
+        <div class="week-block cat-daily" style="border-left-color:var(--accent4)"><div class="wb-time">10:30–11p</div><div class="wb-name" style="color:var(--accent4)">Duolingo</div></div>
+        <div class="week-block cat-free"><div class="wb-time">11p–1:00a</div><div class="wb-name" style="color:var(--muted)">Free+Week Prep</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIVITY CARDS VIEW -->
+  <div id="activities-view" class="weekly-view">
+    <div class="activities-grid">
+      <div class="activity-card" style="border-top: 2px solid var(--accent)">
+        <div class="ac-label">Work · Mon–Fri</div>
+        <div class="ac-name" style="color:var(--accent)">S_Techy</div>
+        <div class="ac-freq">5x / week · 2h each · 10h total</div>
+        <div style="font-size:10px; color:var(--muted); margin-bottom:8px">No breaks · Always 11:30 AM–1:30 PM</div>
+        <div class="ac-days">
+          <span class="day-chip active-day">Mon</span><span class="day-chip active-day">Tue</span><span class="day-chip active-day">Wed</span><span class="day-chip active-day">Thu</span><span class="day-chip active-day">Fri</span><span class="day-chip">Sat</span><span class="day-chip">Sun</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+      </div>
+
+      <div class="activity-card" style="border-top: 2px solid var(--accent2)">
+        <div class="ac-label">Learning · 4x/week</div>
+        <div class="ac-name" style="color:var(--accent2)">Certs</div>
+        <div class="ac-freq">4x / week · 3h each · 12h total</div>
+        <div style="font-size:10px; color:var(--muted); margin-bottom:8px">No breaks · Mon, Tue, Fri + flex</div>
+        <div class="ac-days">
+          <span class="day-chip active-day">Mon</span><span class="day-chip active-day">Tue</span><span class="day-chip">Wed</span><span class="day-chip">Thu</span><span class="day-chip active-day">Fri</span><span class="day-chip active-day">Sat*</span><span class="day-chip">Sun</span>
+        </div>
+        <div class="progress-bar" style=""><div class="progress-fill" style="width:100%; background:var(--accent2)"></div></div>
+      </div>
+
+      <div class="activity-card" style="border-top: 2px solid var(--accent5)">
+        <div class="ac-label">Build · 4x/week</div>
+        <div class="ac-name" style="color:var(--accent5)">HAI Arch</div>
+        <div class="ac-freq">4x / week · 4h each · 16h total</div>
+        <div style="font-size:10px; color:var(--muted); margin-bottom:8px">With breaks · Mon (split), Thu, Sat*, Sun</div>
+        <div class="ac-days">
+          <span class="day-chip active-day">Mon</span><span class="day-chip">Tue</span><span class="day-chip">Wed</span><span class="day-chip active-day">Thu</span><span class="day-chip">Fri</span><span class="day-chip">Sat</span><span class="day-chip active-day">Sun</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%; background:var(--accent5)"></div></div>
+      </div>
+
+      <div class="activity-card" style="border-top: 2px solid #6ef0c8">
+        <div class="ac-label">Build · 2x/week</div>
+        <div class="ac-name" style="color:#6ef0c8">Coding</div>
+        <div class="ac-freq">2x / week · 10h each · 20h total</div>
+        <div style="font-size:10px; color:var(--muted); margin-bottom:8px">With breaks · Wed (~10h) + Sat (~10h combined)</div>
+        <div class="ac-days">
+          <span class="day-chip">Mon</span><span class="day-chip">Tue</span><span class="day-chip active-day">Wed</span><span class="day-chip">Thu</span><span class="day-chip">Fri</span><span class="day-chip active-day">Sat</span><span class="day-chip">Sun</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%; background:#6ef0c8"></div></div>
+      </div>
+
+      <div class="activity-card" style="border-top: 2px solid var(--accent5)">
+        <div class="ac-label">Build · 3x/week</div>
+        <div class="ac-name" style="color:var(--accent5)">Veto Academy</div>
+        <div class="ac-freq">3x / week · 1.5h each · 4.5h total</div>
+        <div style="font-size:10px; color:var(--muted); margin-bottom:8px">No breaks · Tue, Thu, Sun</div>
+        <div class="ac-days">
+          <span class="day-chip">Mon</span><span class="day-chip active-day">Tue</span><span class="day-chip">Wed</span><span class="day-chip active-day">Thu</span><span class="day-chip">Fri</span><span class="day-chip">Sat</span><span class="day-chip active-day">Sun</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:64%; background:var(--accent5)"></div></div>
+      </div>
+
+      <div class="activity-card" style="border-top: 2px solid var(--accent3)">
+        <div class="ac-label">Social · 1x/week</div>
+        <div class="ac-name" style="color:var(--accent3)">Thrivers Trybe</div>
+        <div class="ac-freq">1x / week · 1h · Friday</div>
+        <div style="font-size:10px; color:var(--muted); margin-bottom:8px">No breaks · Fri 6:30–7:30 PM</div>
+        <div class="ac-days">
+          <span class="day-chip">Mon</span><span class="day-chip">Tue</span><span class="day-chip">Wed</span><span class="day-chip">Thu</span><span class="day-chip active-day">Fri</span><span class="day-chip">Sat</span><span class="day-chip">Sun</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:14%; background:var(--accent3)"></div></div>
+      </div>
+
+      <div class="activity-card" style="border-top: 2px solid var(--accent4)">
+        <div class="ac-label">Daily Habit</div>
+        <div class="ac-name" style="color:var(--accent4)">Duolingo</div>
+        <div class="ac-freq">Daily · 30 min · 3.5h total/week</div>
+        <div style="font-size:10px; color:var(--muted); margin-bottom:8px">No breaks · Timing varies per day</div>
+        <div class="ac-days">
+          <span class="day-chip active-day">Mon</span><span class="day-chip active-day">Tue</span><span class="day-chip active-day">Wed</span><span class="day-chip active-day">Thu</span><span class="day-chip active-day">Fri</span><span class="day-chip active-day">Sat</span><span class="day-chip active-day">Sun</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%; background:var(--accent4)"></div></div>
+      </div>
+
+      <div class="activity-card" style="border-top: 2px solid var(--muted)">
+        <div class="ac-label">Rest · 4x/week</div>
+        <div class="ac-name" style="color:var(--muted)">Light Nap</div>
+        <div class="ac-freq">4x / week · 1h each · 4h total</div>
+        <div style="font-size:10px; color:var(--muted); margin-bottom:8px">No breaks · Tue, Thu + 2 flex days</div>
+        <div class="ac-days">
+          <span class="day-chip">Mon</span><span class="day-chip active-day">Tue</span><span class="day-chip">Wed</span><span class="day-chip active-day">Thu</span><span class="day-chip">Fri</span><span class="day-chip">Sat*</span><span class="day-chip active-day">Sun</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:57%; background:var(--muted)"></div></div>
+      </div>
+
+      <div class="activity-card" style="border-top: 2px solid var(--accent3)">
+        <div class="ac-label">Social · 2x/week</div>
+        <div class="ac-name" style="color:var(--accent3)">Social Time</div>
+        <div class="ac-freq">2x / week · 2h each · 4h total</div>
+        <div style="font-size:10px; color:var(--muted); margin-bottom:8px">With breaks · Sat + Sun</div>
+        <div class="ac-days">
+          <span class="day-chip">Mon</span><span class="day-chip">Tue</span><span class="day-chip">Wed</span><span class="day-chip">Thu</span><span class="day-chip">Fri</span><span class="day-chip active-day">Sat</span><span class="day-chip active-day">Sun</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:28%; background:var(--accent3)"></div></div>
+      </div>
+
+      <div class="activity-card" style="border-top: 2px solid var(--accent4)">
+        <div class="ac-label">Daily Habit</div>
+        <div class="ac-name" style="color:var(--accent4)">Book Review</div>
+        <div class="ac-freq">Daily · 1h · 7h total/week</div>
+        <div style="font-size:10px; color:var(--muted); margin-bottom:8px">No breaks · Sometimes split across day</div>
+        <div class="ac-days">
+          <span class="day-chip active-day">Mon</span><span class="day-chip active-day">Tue</span><span class="day-chip active-day">Wed</span><span class="day-chip active-day">Thu</span><span class="day-chip active-day">Fri</span><span class="day-chip active-day">Sat</span><span class="day-chip active-day">Sun</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%; background:var(--accent4)"></div></div>
+      </div>
+
+      <div class="activity-card" style="border-top: 2px solid var(--accent3)">
+        <div class="ac-label">Social · 2x/week</div>
+        <div class="ac-name" style="color:var(--accent3)">People Check-Ups</div>
+        <div class="ac-freq">2x / week · 3h session · Friday</div>
+        <div style="font-size:10px; color:var(--muted); margin-bottom:8px">With breaks · Split across Friday evening/night</div>
+        <div class="ac-days">
+          <span class="day-chip">Mon</span><span class="day-chip">Tue</span><span class="day-chip">Wed</span><span class="day-chip">Thu</span><span class="day-chip active-day">Fri</span><span class="day-chip">Sat</span><span class="day-chip">Sun</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:14%; background:var(--accent3)"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RULES SECTION -->
+  <div class="rules-section" style="margin-top:40px">
+    <div class="rules-title">⚑ Timetable Rules & Notes</div>
+    <ul class="rules-list">
+      <li>Meals are fixed at ~11AM, ~3PM, ~9PM but may shift ±30 min if a session runs long — never skip.</li>
+      <li>S_Techy runs Mon–Fri at 11:30 AM without exception. It is the daily anchor.</li>
+      <li>Wednesday and Saturday are Coding Days. Protect them fiercely — no social bookings during coding blocks.</li>
+      <li>HAI Arch (4–6h) can expand to 6h on days with more room — Mon and Sun are ideal for this.</li>
+      <li>Occupied timeslots are absolute locks. Nothing gets scheduled there, ever.</li>
+      <li>Duolingo and Book Review are dailies — if they miss their assigned slot, they must be done before 1AM.</li>
+      <li>Light Nap is scheduled Tue/Thu + 2 more days of your choice — never skip all 4 in a week.</li>
+      <li>Free / Flex blocks are NOT optional tasks time — they are buffer zones. Use them for overflow only if needed.</li>
+      <li>Certs runs 4x/week. Mon, Tue, Fri are fixed; the 4th session can float to any remaining day without a lock conflict.</li>
+      <li>People Check-Ups (3h, 2x/week) is large — Friday holds one session; the 2nd can shift to Mon or Sat Social window.</li>
+      <li>Veto Academy runs Tue, Thu, Sun — 1.5h each, no breaks. These are content-creation discipline sessions.</li>
+      <li>Thrivers Trybe is locked to Friday at 6:30 PM. It is the weekly social anchor — non-negotiable.</li>
+      <li>If a Coding Day falls behind, do NOT extend past 1AM. Carry debt into next session, not into sleep.</li>
+      <li>Sunday 11PM–1AM is Week Prep time. Use it to review, adjust, and plan the week ahead.</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+  function switchView(view) {
+    document.getElementById('daily-view').style.display = view === 'daily' ? 'block' : 'none';
+    document.getElementById('weekly-view').classList.toggle('active', view === 'weekly');
+    document.getElementById('activities-view').classList.toggle('active', view === 'activities');
+
+    document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+  }
+
+  function switchDay(day) {
+    document.querySelectorAll('.timetable-wrapper').forEach(el => el.classList.remove('active'));
+    document.getElementById('day-' + day).classList.add('active');
+    document.querySelectorAll('.day-tab').forEach(el => el.classList.remove('active'));
+    event.target.classList.add('active');
+  }
+</script>
+</body>
+</html>

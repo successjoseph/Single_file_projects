@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Code Generator · Supernatural Life Church</title>
+
+  <!--
+    qrcodejs v1.0.0 — browser-only QR generation, no server needed.
+    SRI hash (sha512) sourced from cdnjs official registry, verified against
+    the published Subresource Integrity for this exact file.
+    Protects against supply-chain attacks: if the CDN file is tampered,
+    the browser blocks execution before any code runs.
+  -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+    integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
+
+  <style>
+    /* ── Design tokens ─────────────────────────────────────────── */
+    :root {
+      --flame-deep:    #c44b0a;   /* deep burnt orange  */
+      --flame-mid:     #e8720c;   /* brand orange       */
+      --flame-bright:  #f5a623;   /* golden amber       */
+      --flame-glow:    #fce8d0;   /* warm parchment     */
+      --ink:           #1a0e05;   /* near-black         */
+      --ink-soft:      #5a3a20;   /* warm mid-brown     */
+      --surface:       #fff9f3;   /* off-white          */
+      --border:        #f0d9c0;
+      --radius-card:   18px;
+      --radius-btn:    10px;
+      --shadow-card:   0 8px 40px rgba(196,75,10,0.10), 0 2px 8px rgba(196,75,10,0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(160deg, #fff4e8 0%, #fff9f3 55%, #fef3e4 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px 60px;
+      color: var(--ink);
+    }
+
+    /* ── Header ────────────────────────────────────────────────── */
+    header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 36px;
+      text-align: center;
+    }
+
+    .logo-ring {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      padding: 6px;
+      background: conic-gradient(from 135deg, var(--flame-deep), var(--flame-mid), var(--flame-bright), var(--flame-mid), var(--flame-deep));
+      box-shadow: 0 4px 24px rgba(232,114,12,0.30);
+    }
+    .logo-ring img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      display: block;
+      object-fit: cover;
+      background: #fff;
+    }
+
+    h1 {
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(105deg, var(--flame-deep) 10%, var(--flame-bright) 90%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.15;
+    }
+
+    .tagline {
+      font-size: 0.88rem;
+      color: var(--ink-soft);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    /* ── Card ──────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+      width: 100%;
+      max-width: 520px;
+      padding: 36px 32px 32px;
+    }
+
+    /* ── Input area ────────────────────────────────────────────── */
+    .field-label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: 8px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 100px;
+      resize: vertical;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 0.97rem;
+      font-family: inherit;
+      color: var(--ink);
+      background: #fff;
+      transition: border-color 0.18s, box-shadow 0.18s;
+      outline: none;
+      line-height: 1.55;
+    }
+    textarea::placeholder { color: #c8a882; }
+    textarea:focus {
+      border-color: var(--flame-mid);
+      box-shadow: 0 0 0 3px rgba(232,114,12,0.14);
+    }
+
+    /* ── Options row ───────────────────────────────────────────── */
+    .options-row {
+      display: flex;
+      gap: 14px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    .option-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      flex: 1;
+      min-width: 120px;
+    }
+
+    select, input[type="color"] {
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 0.88rem;
+      font-family: inherit;
+      color: var(--ink);
+      background: #fff;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.18s;
+    }
+    select:focus { border-color: var(--flame-mid); }
+
+    input[type="color"] {
+      padding: 3px 5px;
+      height: 36px;
+      cursor: pointer;
+    }
+
+    /* ── Generate button ───────────────────────────────────────── */
+    .btn-generate {
+      margin-top: 22px;
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius-btn);
+      background: linear-gradient(100deg, var(--flame-deep) 0%, var(--flame-mid) 60%, var(--flame-bright) 100%);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(196,75,10,0.28);
+      transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-generate::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0);
+      transition: background 0.15s;
+    }
+    .btn-generate:hover::after { background: rgba(255,255,255,0.10); }
+    .btn-generate:active { transform: translateY(1px); box-shadow: 0 2px 8px rgba(196,75,10,0.22); }
+
+    /* ── Output zone ───────────────────────────────────────────── */
+    .output-zone {
+      margin-top: 32px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    .output-zone.visible { display: flex; }
+
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+    }
+
+    .qr-wrap {
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 2px 16px rgba(196,75,10,0.08);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #qr-canvas { display: block; }
+
+    /* ── Download button ───────────────────────────────────────── */
+    .btn-download {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 24px;
+      border: 2px solid var(--flame-mid);
+      border-radius: var(--radius-btn);
+      background: transparent;
+      color: var(--flame-deep);
+      font-size: 0.93rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      text-decoration: none;
+    }
+    .btn-download:hover {
+      background: var(--flame-mid);
+      color: #fff;
+    }
+
+    /* ── Error state ───────────────────────────────────────────── */
+    .error-msg {
+      display: none;
+      background: #fff0ec;
+      border: 1px solid #f5bfb0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.88rem;
+      color: var(--flame-deep);
+      margin-top: 10px;
+    }
+    .error-msg.visible { display: block; }
+
+    /* ── Footer ────────────────────────────────────────────────── */
+    footer {
+      margin-top: 48px;
+      font-size: 0.75rem;
+      color: #c8a882;
+      text-align: center;
+      line-height: 1.7;
+    }
+    footer a { color: var(--flame-mid); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Security badge ────────────────────────────────────────── */
+    .security-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f0f9f2;
+      border: 1px solid #b6dfc0;
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 0.73rem;
+      font-weight: 600;
+      color: #2a7a40;
+      margin-top: 6px;
+      letter-spacing: 0.03em;
+    }
+    .security-badge svg { flex-shrink: 0; }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="logo-ring">
+      <img src="data:image/png;base64,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" alt="Supernatural Life Church" />
+    </div>
+    <h1>QR Code Generator</h1>
+    <p class="tagline">Supernatural Life Church</p>
+    <div class="security-badge">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M8 1L2 3.5V8c0 3.3 2.5 6.2 6 7 3.5-.8 6-3.7 6-7V3.5L8 1z" fill="#2a7a40" opacity=".18"/>
+        <path d="M8 1L2 3.5V8c0 3.3 2.5 6.2 6 7 3.5-.8 6-3.7 6-7V3.5L8 1z" stroke="#2a7a40" stroke-width="1.4" fill="none"/>
+        <path d="M5.5 8l2 2 3-3" stroke="#2a7a40" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      SRI-protected · No backend · Runs 100% offline
+    </div>
+  </header>
+
+  <div class="card">
+
+    <label class="field-label" for="qr-input">Text or URL to encode</label>
+    <textarea
+      id="qr-input"
+      placeholder="https://supernaturallifechurch.org  or  any text…"
+      autocomplete="off"
+      spellcheck="false"
+    ></textarea>
+
+    <div class="error-msg" id="error-msg" role="alert">
+      Please enter some text or a URL to generate a QR code.
+    </div>
+
+    <div class="options-row">
+      <div class="option-group">
+        <label class="field-label" for="qr-size">Size</label>
+        <select id="qr-size">
+          <option value="128">Small (128 px)</option>
+          <option value="200" selected>Medium (200 px)</option>
+          <option value="300">Large (300 px)</option>
+          <option value="400">X-Large (400 px)</option>
+        </select>
+      </div>
+      <div class="option-group">
+        <label class="field-label" for="qr-ecl">Error correction</label>
+        <select id="qr-ecl">
+          <option value="L">Low (7%)</option>
+          <option value="M" selected>Medium (15%)</option>
+          <option value="Q">High (25%)</option>
+          <option value="H">Best (30%)</option>
+        </select>
+      </div>
+      <div class="option-group">
+        <label class="field-label" for="qr-dark">Dark colour</label>
+        <input type="color" id="qr-dark" value="#1a0e05" />
+      </div>
+      <div class="option-group">
+        <label class="field-label" for="qr-light">Light colour</label>
+        <input type="color" id="qr-light" value="#ffffff" />
+      </div>
+    </div>
+
+    <button class="btn-generate" id="btn-generate" type="button">
+      Generate QR Code
+    </button>
+
+    <div class="output-zone" id="output-zone">
+      <div class="divider"></div>
+      <div class="qr-wrap" id="qr-wrap">
+        <div id="qr-canvas"></div>
+      </div>
+      <a class="btn-download" id="btn-download" href="#" download="slc-qr-code.png">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M8 1v9M4.5 7l3.5 4 3.5-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        Save as PNG
+      </a>
+    </div>
+
+  </div>
+
+  <footer>
+    Runs entirely in your browser — no data is sent anywhere.<br />
+    QR generation via <a href="https://github.com/davidshimjs/qrcodejs" target="_blank" rel="noopener noreferrer">qrcodejs</a>
+    loaded with Subresource Integrity (SRI) to prevent supply-chain attacks.
+  </footer>
+
+  <script>
+    // ── DOM refs ──────────────────────────────────────────────────
+    const input      = document.getElementById('qr-input');
+    const btnGen     = document.getElementById('btn-generate');
+    const outputZone = document.getElementById('output-zone');
+    const qrTarget   = document.getElementById('qr-canvas');
+    const btnDl      = document.getElementById('btn-download');
+    const errMsg     = document.getElementById('error-msg');
+    const selSize    = document.getElementById('qr-size');
+    const selECL     = document.getElementById('qr-ecl');
+    const pickDark   = document.getElementById('qr-dark');
+    const pickLight  = document.getElementById('qr-light');
+
+    let qrInstance = null;
+
+    // ── ECL map ───────────────────────────────────────────────────
+    const ECL_MAP = {
+      L: QRCode.CorrectLevel.L,
+      M: QRCode.CorrectLevel.M,
+      Q: QRCode.CorrectLevel.Q,
+      H: QRCode.CorrectLevel.H,
+    };
+
+    // ── Generate ──────────────────────────────────────────────────
+    function generate() {
+      const text = input.value.trim();
+
+      // Validate
+      errMsg.classList.remove('visible');
+      if (!text) {
+        errMsg.classList.add('visible');
+        input.focus();
+        return;
+      }
+
+      const size     = parseInt(selSize.value, 10);
+      const ecLevel  = ECL_MAP[selECL.value] ?? QRCode.CorrectLevel.M;
+      const darkCol  = pickDark.value;
+      const lightCol = pickLight.value;
+
+      // Tear down previous instance safely
+      if (qrInstance) {
+        qrInstance.clear();
+        qrTarget.innerHTML = '';
+        qrInstance = null;
+      }
+
+      qrInstance = new QRCode(qrTarget, {
+        text,
+        width:          size,
+        height:         size,
+        colorDark:      darkCol,
+        colorLight:     lightCol,
+        correctLevel:   ecLevel,
+      });
+
+      // qrcodejs renders a canvas (and an img fallback).
+      // We wait one tick for the canvas to be populated, then wire the download.
+      setTimeout(() => {
+        const canvas = qrTarget.querySelector('canvas');
+        if (canvas) {
+          btnDl.href     = canvas.toDataURL('image/png');
+          btnDl.download = 'slc-qr-code.png';
+        }
+        outputZone.classList.add('visible');
+        outputZone.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 80);
+    }
+
+    // ── Events ────────────────────────────────────────────────────
+    btnGen.addEventListener('click', generate);
+
+    input.addEventListener('keydown', (e) => {
+      // Ctrl/Cmd + Enter triggers generation
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) generate();
+    });
+
+    // Clear error as user types
+    input.addEventListener('input', () => {
+      if (input.value.trim()) errMsg.classList.remove('visible');
+    });
+  </script>
+
+</body>
+</html>
